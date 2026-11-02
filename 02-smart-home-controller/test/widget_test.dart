@@ -46,7 +46,7 @@ void main() {
       final fan = SmartFan.sleepMode(id: 'fan-1', location: 'Bedroom');
       expect(SmartDevice.totalDevices, 5);
       expect(fan.speed, FanSpeed.low);
-      expect(fan.getStatus(), 'Low');
+      expect(fan.getStatus(), 'ON');
 
       final cam = SecurityCamera.outdoor(id: 'cam-1', location: 'Garden');
       expect(SmartDevice.totalDevices, 6);

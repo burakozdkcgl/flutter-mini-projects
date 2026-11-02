@@ -78,8 +78,7 @@ class SmartFan extends SmartDevice with Schedulable {
 
   @override
   String getStatus() {
-    if (!isPoweredOn) return 'OFF';
-    return speedLabel;
+    return (isPoweredOn && speed != FanSpeed.off) ? 'ON' : 'OFF';
   }
 
   @override
