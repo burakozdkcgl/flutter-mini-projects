@@ -161,7 +161,7 @@ class DeviceCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 5),
-        Text(status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+        Text('Status: $status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
             color: isActive ? const Color(0xFF334155) : const Color(0xFF94A3B8))),
       ],
     );

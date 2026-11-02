@@ -32,10 +32,10 @@ class SmartLock extends SmartDevice with Schedulable {
   SmartLock.secured({
     required super.id,
     required super.location,
+    super.name = 'Smart Lock',
   })  : isLocked = true,
         failedAttempts = 0,
         super(
-          name: 'Smart Lock',
           isPoweredOn: true,
           isConnected: true,
         );
@@ -44,10 +44,10 @@ class SmartLock extends SmartDevice with Schedulable {
   SmartLock.guestMode({
     required super.id,
     required super.location,
+    super.name = 'Smart Lock',
   })  : isLocked = false,
         failedAttempts = 0,
         super(
-          name: 'Smart Lock',
           isPoweredOn: true,
           isConnected: true,
         );

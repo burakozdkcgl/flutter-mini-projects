@@ -35,11 +35,11 @@ class SmartSpeaker extends SmartDevice {
   SmartSpeaker.partyMode({
     required super.id,
     required super.location,
+    super.name = 'Smart Speaker',
   })  : volume = 80,
         isPlaying = true,
         currentTrack = 'Upbeat Electronic Mix',
         super(
-          name: 'Smart Speaker',
           isPoweredOn: true,
           isConnected: true,
         );
@@ -48,11 +48,11 @@ class SmartSpeaker extends SmartDevice {
   SmartSpeaker.ambient({
     required super.id,
     required super.location,
+    super.name = 'Smart Speaker',
   })  : volume = 25,
         isPlaying = false,
         currentTrack = 'Nature Sounds & Rain',
         super(
-          name: 'Smart Speaker',
           isPoweredOn: true,
           isConnected: true,
         );

@@ -33,10 +33,10 @@ class SmartFan extends SmartDevice with Schedulable {
   SmartFan.sleepMode({
     required super.id,
     required super.location,
+    super.name = 'Smart Fan',
   })  : speed = FanSpeed.low,
         isOscillating = false,
         super(
-          name: 'Smart Fan',
           isPoweredOn: true,
           isConnected: true,
         );
@@ -45,10 +45,10 @@ class SmartFan extends SmartDevice with Schedulable {
   SmartFan.turbo({
     required super.id,
     required super.location,
+    super.name = 'Smart Fan',
   })  : speed = FanSpeed.high,
         isOscillating = true,
         super(
-          name: 'Smart Fan',
           isPoweredOn: true,
           isConnected: true,
         );

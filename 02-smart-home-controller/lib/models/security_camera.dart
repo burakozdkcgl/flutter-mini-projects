@@ -32,11 +32,11 @@ class SecurityCamera extends SmartDevice {
   SecurityCamera.outdoor({
     required super.id,
     required super.location,
+    super.name = 'Security Camera',
   })  : isRecording = true,
         motionDetected = false,
         resolution = '4K',
         super(
-          name: 'Security Camera',
           isPoweredOn: true,
           isConnected: true,
         );
@@ -45,11 +45,11 @@ class SecurityCamera extends SmartDevice {
   SecurityCamera.doorbell({
     required super.id,
     required super.location,
+    super.name = 'Security Camera',
   })  : isRecording = false,
         motionDetected = false,
         resolution = '1080p',
         super(
-          name: 'Security Camera',
           isPoweredOn: true,
           isConnected: true,
         );

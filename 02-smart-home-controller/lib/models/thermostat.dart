@@ -32,9 +32,9 @@ class Thermostat extends SmartDevice with Schedulable {
   Thermostat.eco({
     required super.id,
     required super.location,
+    super.name = 'Thermostat',
   })  : temperature = 19.0,
         super(
-          name: 'Thermostat',
           isPoweredOn: true,
           isConnected: true,
         );

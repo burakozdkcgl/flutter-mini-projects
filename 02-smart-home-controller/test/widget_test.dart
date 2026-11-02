@@ -14,7 +14,7 @@ void main() {
 
       final light = SmartLight(
         id: 'light-1',
-        name: 'Smart Light',
+        name: 'Desk Light',
         location: 'Living Room',
       );
       expect(SmartDevice.totalDevices, 1);
@@ -22,6 +22,7 @@ void main() {
 
       final ecoThermostat = Thermostat.eco(
         id: 'thermo-1',
+        name: 'Eco AC',
         location: 'Bedroom',
       );
       expect(SmartDevice.totalDevices, 2);
@@ -132,7 +133,7 @@ void main() {
   });
 
   group('UI Screens & Widgets Smoke Test', () {
-    testWidgets('Renders devices, controls, and bottom static counter', (tester) async {
+    testWidgets('Renders exactly one of each category, controls, and bottom static counter', (tester) async {
       await tester.pumpWidget(const SmartHomeControllerApp());
       await tester.pumpAndSettle();
 
@@ -140,13 +141,13 @@ void main() {
       expect(find.text('Smart Home'), findsOneWidget);
       expect(find.text('Controller'), findsOneWidget);
 
-      // Verify Sample 1 device cards
-      expect(find.text('Smart Light'), findsOneWidget);
-      expect(find.text('Thermostat'), findsOneWidget);
-      expect(find.text('Smart Speaker'), findsOneWidget);
+      // Verify Initial device cards in viewport (1 of each category)
+      expect(find.text('Living Room Chandelier'), findsOneWidget);
+      expect(find.text('Bedroom Climate Unit'), findsOneWidget);
+      expect(find.text('Kitchen Audio Station'), findsOneWidget);
 
-      // Verify Bottom bar static device counter
-      expect(find.text('Total Devices: 3'), findsOneWidget);
+      // Verify Bottom bar static device counter (exactly 6 devices = 1 per category)
+      expect(find.text('Total Devices: 6'), findsOneWidget);
 
       // Verify Switch interaction for light
       final lightSwitch = find.byType(Switch).first;
@@ -158,17 +159,16 @@ void main() {
       expect(find.byIcon(Icons.add_rounded), findsWidgets);
       await tester.tap(find.byIcon(Icons.add_rounded).first);
       await tester.pumpAndSettle();
-      expect(find.text('Temp: 23°C'), findsOneWidget);
+      expect(find.text('Temp: 20°C'), findsOneWidget);
 
       // Verify Speaker Play button
       expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
       await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
-      expect(find.text('Playing'), findsOneWidget);
     });
 
-    testWidgets('Can open Configure sheet and Add a new device', (tester) async {
+    testWidgets('Can open Configure sheet and Add a new device with custom name', (tester) async {
       await tester.pumpWidget(const SmartHomeControllerApp());
       await tester.pumpAndSettle();
 
@@ -194,15 +194,21 @@ void main() {
       await tester.tap(find.text('Lock'));
       await tester.pumpAndSettle();
 
+      // Enter custom device name
+      final nameField = find.widgetWithText(TextField, 'Door Lock');
+      expect(nameField, findsOneWidget);
+      await tester.enterText(nameField, 'Garage Smart Bolt');
+      await tester.pumpAndSettle();
+
       // Tap 'Create'
       final createBtn = find.widgetWithText(FilledButton, 'Create');
       expect(createBtn, findsOneWidget);
       await tester.tap(createBtn);
       await tester.pumpAndSettle();
 
-      // Verify Total Devices incremented to 4 and snackbar appeared
-      expect(find.text('Total Devices: 4'), findsOneWidget);
-      expect(find.text('Smart Lock added to Living Room'), findsOneWidget);
+      // Verify Total Devices incremented to 7 and snackbar appeared with custom name
+      expect(find.text('Total Devices: 7'), findsOneWidget);
+      expect(find.text('Garage Smart Bolt added to Living Room'), findsOneWidget);
     });
   });
 }

@@ -489,6 +489,7 @@ class _AddDeviceDialog extends StatefulWidget {
 class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   String _selectedType = 'Smart Light';
   String _constructorMode = 'Default';
+  late final TextEditingController _nameCtrl;
   final _locationCtrl = TextEditingController(text: 'Living Room');
 
   static const _types = [
@@ -501,9 +502,35 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: 'Main Light');
+  }
+
+  @override
   void dispose() {
+    _nameCtrl.dispose();
     _locationCtrl.dispose();
     super.dispose();
+  }
+
+  String _defaultNameFor(String type) {
+    switch (type) {
+      case 'Smart Light':     return 'Ceiling Light';
+      case 'Thermostat':      return 'Main Thermostat';
+      case 'Smart Speaker':   return 'Sound System';
+      case 'Smart Lock':      return 'Door Lock';
+      case 'Smart Fan':       return 'Ceiling Fan';
+      case 'Security Camera': return 'Security Camera';
+      default:                return 'Smart Device';
+    }
+  }
+
+  void _selectType(String type) {
+    setState(() {
+      _selectedType = type;
+      _nameCtrl.text = _defaultNameFor(type);
+    });
   }
 
   String get _namedCtorLabel {
@@ -525,7 +552,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _selectedType = type),
+        onTap: () => _selectType(type),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
@@ -592,7 +619,6 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                       letterSpacing: 0.8, color: Color(0xFF94A3B8))),
               const SizedBox(height: 8),
-              // Two clean rows of 3 items - safe for intrinsics & hit tests
               Row(
                 children: [
                   _buildTypeBtn(_types[0]),
@@ -611,6 +637,30 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
                   const SizedBox(width: 8),
                   _buildTypeBtn(_types[5]),
                 ],
+              ),
+              const SizedBox(height: 14),
+              const Text('Device Name',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8, color: Color(0xFF94A3B8))),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Reading Lamp, Ceiling Fan…',
+                  prefixIcon: const Icon(Icons.label_rounded, size: 18, color: Color(0xFF94A3B8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryLight, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                ),
               ),
               const SizedBox(height: 14),
               const Text('Location',
@@ -637,7 +687,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('Constructor',
+              const Text('Constructor Mode',
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                       letterSpacing: 0.8, color: Color(0xFF94A3B8))),
               const SizedBox(height: 8),
@@ -714,6 +764,8 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   }
 
   void _create() {
+    final rawName = _nameCtrl.text.trim();
+    final name = rawName.isEmpty ? _defaultNameFor(_selectedType) : rawName;
     final location = _locationCtrl.text.trim().isEmpty ? 'Living Room' : _locationCtrl.text.trim();
     final id = 'dev-${DateTime.now().millisecondsSinceEpoch}';
     final named = _constructorMode == 'Named';
@@ -722,40 +774,38 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
     switch (_selectedType) {
       case 'Smart Light':
         device = named
-            ? SmartLight.dimmed(id: id, location: location)
-            : SmartLight(id: id, name: 'Smart Light', location: location, brightness: 80, isPoweredOn: true);
+            ? SmartLight.dimmed(id: id, name: name, location: location)
+            : SmartLight(id: id, name: name, location: location, brightness: 80, isPoweredOn: true);
         break;
       case 'Thermostat':
         device = named
-            ? Thermostat.eco(id: id, location: location)
-            : Thermostat(id: id, name: 'Thermostat', location: location, temperature: 22.0, isPoweredOn: true);
+            ? Thermostat.eco(id: id, name: name, location: location)
+            : Thermostat(id: id, name: name, location: location, temperature: 22.0, isPoweredOn: true);
         break;
       case 'Smart Speaker':
         device = named
-            ? SmartSpeaker.ambient(id: id, location: location)
-            : SmartSpeaker(id: id, name: 'Smart Speaker', location: location, volume: 40, isPlaying: false);
+            ? SmartSpeaker.ambient(id: id, name: name, location: location)
+            : SmartSpeaker(id: id, name: name, location: location, volume: 40, isPlaying: false);
         break;
       case 'Smart Lock':
         device = named
-            ? SmartLock.secured(id: id, location: location)
-            : SmartLock(id: id, name: 'Smart Lock', location: location, isLocked: true);
+            ? SmartLock.secured(id: id, name: name, location: location)
+            : SmartLock(id: id, name: name, location: location, isLocked: true);
         break;
       case 'Smart Fan':
         device = named
-            ? SmartFan.sleepMode(id: id, location: location)
-            : SmartFan(id: id, name: 'Smart Fan', location: location, isPoweredOn: true, speed: FanSpeed.low);
+            ? SmartFan.sleepMode(id: id, name: name, location: location)
+            : SmartFan(id: id, name: name, location: location, isPoweredOn: true, speed: FanSpeed.low);
         break;
       case 'Security Camera':
       default:
         device = named
-            ? SecurityCamera.outdoor(id: id, location: location)
-            : SecurityCamera(id: id, name: 'Security Camera', location: location, isRecording: false);
+            ? SecurityCamera.outdoor(id: id, name: name, location: location)
+            : SecurityCamera(id: id, name: name, location: location, isRecording: false);
         break;
     }
 
-    // Safely pop the dialog first
     Navigator.pop(context);
-    // Then deliver the created device to the parent
     widget.onCreated(device);
   }
 }
