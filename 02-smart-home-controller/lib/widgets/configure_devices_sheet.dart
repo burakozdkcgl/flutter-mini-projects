@@ -2,6 +2,91 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
+void showAddDeviceDialog(BuildContext context, {required void Function(SmartDevice) onAdd}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => _AddDeviceDialog(onCreated: onAdd),
+  );
+}
+
+void showEditDeviceDialog(BuildContext context, {required SmartDevice device, required void Function(String name, String location) onEdit}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => _EditDeviceDialog(device: device, onSaved: onEdit),
+  );
+}
+
+void showRemoveDeviceDialog(BuildContext context, {required SmartDevice device, required void Function(SmartDevice) onRemove}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      title: Row(
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text('Remove Device',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              'Remove "${device.name}" from ${device.location}?',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This action cannot be undone and will update the total device counter.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+        ),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFEF4444),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          icon: const Icon(Icons.delete_outline_rounded, size: 18),
+          label: const Text('Remove'),
+          onPressed: () {
+            Navigator.pop(ctx);
+            onRemove(device);
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 /// Returns device type label string for a given SmartDevice.
 String deviceTypeLabel(SmartDevice d) {
   if (d is SmartLight) return 'Smart Light';
@@ -219,35 +304,13 @@ class _ConfigureDevicesSheetState extends State<ConfigureDevicesSheet> {
 
   // ── Remove ──────────────────────────────────────────────────────────────
   void _confirmRemove(SmartDevice device) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Remove Device', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: Text(
-          'Remove "${device.name}" from ${device.location}?\nThis action cannot be undone.',
-          style: const TextStyle(color: Color(0xFF64748B)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            icon: const Icon(Icons.delete_outline_rounded, size: 18),
-            label: const Text('Remove'),
-            onPressed: () {
-              Navigator.pop(ctx);
-              widget.onRemove(device);
-              setState(() {});
-            },
-          ),
-        ],
-      ),
+    showRemoveDeviceDialog(
+      context,
+      device: device,
+      onRemove: (d) {
+        widget.onRemove(d);
+        setState(() {});
+      },
     );
   }
 }
@@ -373,6 +436,7 @@ class _EditDeviceDialogState extends State<_EditDeviceDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -393,36 +457,39 @@ class _EditDeviceDialogState extends State<_EditDeviceDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 4),
-          // Type — read-only
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 4),
+            // Type — read-only
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.category_rounded, size: 16, color: accent),
+                  const SizedBox(width: 8),
+                  Text(deviceTypeLabel(widget.device),
+                      style: TextStyle(fontWeight: FontWeight.w600, color: accent, fontSize: 13)),
+                  const Spacer(),
+                  const Icon(Icons.lock_rounded, size: 13, color: Color(0xFFCBD5E1)),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.category_rounded, size: 16, color: accent),
-                const SizedBox(width: 8),
-                Text(deviceTypeLabel(widget.device),
-                    style: TextStyle(fontWeight: FontWeight.w600, color: accent, fontSize: 13)),
-                const Spacer(),
-                const Icon(Icons.lock_rounded, size: 13, color: Color(0xFFCBD5E1)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Name
-          _field(controller: _nameCtrl, label: 'Device Name', icon: Icons.label_rounded),
-          const SizedBox(height: 10),
-          // Location
-          _field(controller: _locationCtrl, label: 'Location / Room', icon: Icons.location_on_rounded),
-        ],
+            const SizedBox(height: 12),
+            // Name
+            _field(controller: _nameCtrl, label: 'Device Name', icon: Icons.label_rounded),
+            const SizedBox(height: 10),
+            // Location
+            _field(controller: _locationCtrl, label: 'Location / Room', icon: Icons.location_on_rounded),
+          ],
+        ),
       ),
       actions: [
         OutlinedButton(
@@ -577,6 +644,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),

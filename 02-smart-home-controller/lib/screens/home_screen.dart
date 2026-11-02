@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late List<SmartDevice> _devices;
   String _selectedFilter = 'All';
+  final ScrollController _scrollController = ScrollController();
 
   static const _filters = [
     ('All',      Icons.grid_view_rounded,  ''),
@@ -32,6 +33,52 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _devices = DeviceRepository.getSample1Devices();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final screen = Uri.base.queryParameters['screen'];
+      if (screen == 'config') {
+        _openConfigure();
+      } else if (screen == 'add') {
+        showAddDeviceDialog(context, onAdd: _onAdd);
+      } else if (screen == 'edit') {
+        if (_devices.isNotEmpty) {
+          showEditDeviceDialog(context, device: _devices.first, onEdit: (n, l) => _onEdit(_devices.first, n, l));
+        }
+      } else if (screen == 'delete') {
+        if (_devices.isNotEmpty) {
+          showRemoveDeviceDialog(context, device: _devices.first, onRemove: _onRemove);
+        }
+      } else if (screen == 'lock' || screen == 'lock_door') {
+        final lock = _devices.firstWhere(
+          (d) => d is SmartLock,
+          orElse: () => _devices.first,
+        );
+        _openDetails(lock);
+      } else if (screen == 'thermostat' || screen == 'climate') {
+        final thermo = _devices.firstWhere(
+          (d) => d is Thermostat,
+          orElse: () => _devices.first,
+        );
+        _openDetails(thermo);
+      } else if (screen == 'audio' || screen == 'speaker') {
+        final speaker = _devices.firstWhere(
+          (d) => d is SmartSpeaker,
+          orElse: () => _devices.first,
+        );
+        _openDetails(speaker);
+      } else if (screen == 'info') {
+        _showOopInfo();
+      } else if (screen == 'scroll_bottom') {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // ── Filtering ─────────────────────────────────────────────────────────────
@@ -236,6 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       itemCount: list.length,
       itemBuilder: (context, index) {

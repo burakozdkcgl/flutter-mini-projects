@@ -53,11 +53,6 @@ class _DeviceDetailsSheetState extends State<DeviceDetailsSheet> {
             _sectionLabel('Features'),
             const SizedBox(height: 8),
             _buildFeatures(),
-            const SizedBox(height: 16),
-            // OOP card
-            _sectionLabel('OOP Implementation'),
-            const SizedBox(height: 8),
-            _buildOopCard(),
           ],
         ),
       ),
@@ -426,54 +421,6 @@ class _DeviceDetailsSheetState extends State<DeviceDetailsSheet> {
           Text(sub, style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
         ]),
       ),
-    );
-  }
-
-  // ── OOP card ─────────────────────────────────────────────────────────────
-  Widget _buildOopCard() {
-    final hasSchedulable = dev is Schedulable;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(color: accent.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(5)),
-            child: Text('dart', style: TextStyle(fontSize: 10, color: accent, fontFamily: 'monospace', fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(width: 8),
-          const Text('OOP Implementation',
-              style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontFamily: 'monospace')),
-        ]),
-        const SizedBox(height: 10),
-        _codeLine('class', dev.runtimeType.toString(), 'extends SmartDevice', const Color(0xFF34D399)),
-        _codeLine('implements', 'Connectable', '(isConnected: ${dev.isConnected})', const Color(0xFF60A5FA)),
-        _codeLine('mixin', hasSchedulable ? 'Schedulable' : 'None',
-            hasSchedulable ? '(scheduled: ${(dev as Schedulable).isScheduled})' : '', const Color(0xFFF472B6)),
-        _codeLine('getStatus()', '"${dev.getStatus()}"', '', const Color(0xFFFBBF24)),
-        _codeLine('static', 'totalDevices', '= ${SmartDevice.totalDevices}', const Color(0xFFA78BFA)),
-      ]),
-    );
-  }
-
-  Widget _codeLine(String kw, String name, String extra, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: RichText(text: TextSpan(
-        style: const TextStyle(fontSize: 12, fontFamily: 'monospace', height: 1.5),
-        children: [
-          TextSpan(text: '• ', style: TextStyle(color: color)),
-          TextSpan(text: '$kw ', style: TextStyle(color: color, fontWeight: FontWeight.w700)),
-          const TextSpan(text: '', style: TextStyle(color: Colors.white)),
-          TextSpan(text: name, style: const TextStyle(color: Colors.white)),
-          if (extra.isNotEmpty)
-            TextSpan(text: '  $extra', style: const TextStyle(color: Color(0xFF64748B))),
-        ],
-      )),
     );
   }
 }
