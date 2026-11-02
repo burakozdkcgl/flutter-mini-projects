@@ -2,51 +2,30 @@ import '../models/models.dart';
 
 /// Repository managing initial and active smart home devices.
 ///
-/// Demonstrates:
-/// - Creating multiple device instances.
-/// - Displaying at least one instance of each subclass (`SmartLight`, `Thermostat`, `SmartSpeaker`).
-/// - Instantiating devices using **both default and named constructors**.
+/// Demonstrates creating multiple device instances using both
+/// default and named constructors across all device subclasses.
 class DeviceRepository {
-  /// Loads the default device collection matching the assignment requirements.
-  ///
-  /// Demonstrates both default and named constructor invocations across all classes.
-  static List<SmartDevice> getInitialDevices() {
-    // Reset static device count before creating the initial set
+  /// Initial 3-device set matching the assignment minimum requirement.
+  static List<SmartDevice> getSample1Devices() {
     SmartDevice.resetDeviceCount();
-
     return [
-      // 1. SmartLight instantiated via DEFAULT constructor
+      // Default constructor
       SmartLight(
-        id: 'light-living-room',
+        id: 'light-living',
         name: 'Smart Light',
         location: 'Living Room',
         brightness: 75,
         isPoweredOn: true,
       ),
-
-      // 2. SmartLight instantiated via NAMED constructor (.standard)
-      SmartLight.standard(
-        id: 'light-kitchen',
-        location: 'Kitchen',
-        brightness: 50,
-      ),
-
-      // 3. Thermostat instantiated via DEFAULT constructor
+      // Default constructor
       Thermostat(
-        id: 'thermostat-bedroom',
+        id: 'thermo-bedroom',
         name: 'Thermostat',
         location: 'Bedroom',
         temperature: 22.0,
         isPoweredOn: true,
       ),
-
-      // 4. Thermostat instantiated via NAMED constructor (.eco)
-      Thermostat.eco(
-        id: 'thermostat-living-room',
-        location: 'Living Room',
-      ),
-
-      // 5. SmartSpeaker instantiated via DEFAULT constructor
+      // Default constructor
       SmartSpeaker(
         id: 'speaker-kitchen',
         name: 'Smart Speaker',
@@ -54,77 +33,104 @@ class DeviceRepository {
         volume: 40,
         isPlaying: false,
       ),
+    ];
+  }
 
-      // 6. SmartSpeaker instantiated via NAMED constructor (.ambient)
+  /// Full showcase with all 6 device types, using both default & named ctors.
+  static List<SmartDevice> getInitialDevices() {
+    SmartDevice.resetDeviceCount();
+    return [
+      // SmartLight – default constructor
+      SmartLight(
+        id: 'light-living',
+        name: 'Smart Light',
+        location: 'Living Room',
+        brightness: 75,
+        isPoweredOn: true,
+      ),
+      // SmartLight – named constructor
+      SmartLight.dimmed(
+        id: 'light-bedroom',
+        location: 'Bedroom',
+      ),
+      // Thermostat – default constructor
+      Thermostat(
+        id: 'thermo-bedroom',
+        name: 'Thermostat',
+        location: 'Bedroom',
+        temperature: 22.0,
+        isPoweredOn: true,
+      ),
+      // Thermostat – named constructor (.eco)
+      Thermostat.eco(
+        id: 'thermo-living',
+        location: 'Living Room',
+      ),
+      // SmartSpeaker – default constructor
+      SmartSpeaker(
+        id: 'speaker-kitchen',
+        name: 'Smart Speaker',
+        location: 'Kitchen',
+        volume: 40,
+        isPlaying: false,
+      ),
+      // SmartSpeaker – named constructor (.ambient)
       SmartSpeaker.ambient(
         id: 'speaker-office',
         location: 'Office',
       ),
-    ];
-  }
-
-  /// Preset matching Sample Screen 1 from the assignment PDF (3 devices).
-  static List<SmartDevice> getSample1Devices() {
-    SmartDevice.resetDeviceCount();
-    return [
-      SmartLight(
-        id: 'light-living-room',
-        name: 'Smart Light',
-        location: 'Living Room',
-        brightness: 75,
-        isPoweredOn: true,
+      // SmartLock – named constructor (.secured)
+      SmartLock.secured(
+        id: 'lock-front',
+        location: 'Front Door',
       ),
-      Thermostat(
-        id: 'thermostat-bedroom',
-        name: 'Thermostat',
+      // SmartLock – named constructor (.guestMode)
+      SmartLock.guestMode(
+        id: 'lock-garage',
+        location: 'Garage',
+      ),
+      // SmartFan – default constructor
+      SmartFan(
+        id: 'fan-bedroom',
+        name: 'Smart Fan',
         location: 'Bedroom',
-        temperature: 22.0,
         isPoweredOn: true,
+        speed: FanSpeed.medium,
+        isOscillating: true,
       ),
-      SmartSpeaker(
-        id: 'speaker-kitchen',
-        name: 'Smart Speaker',
-        location: 'Kitchen',
-        volume: 40,
-        isPlaying: false,
+      // SmartFan – named constructor (.sleepMode)
+      SmartFan.sleepMode(
+        id: 'fan-nursery',
+        location: 'Nursery',
+      ),
+      // SecurityCamera – named constructor (.outdoor)
+      SecurityCamera.outdoor(
+        id: 'cam-garden',
+        location: 'Garden',
+      ),
+      // SecurityCamera – named constructor (.doorbell)
+      SecurityCamera.doorbell(
+        id: 'cam-door',
+        location: 'Front Door',
       ),
     ];
   }
 
-  /// Preset matching Sample Screen 2 from the assignment PDF (5 devices).
+  /// 5-device multi-room preset (assignment sample 2 equivalent).
   static List<SmartDevice> getSample2Devices() {
     SmartDevice.resetDeviceCount();
     return [
       SmartLight(
-        id: 'light-living-room',
+        id: 'light-living',
         name: 'Smart Light',
         location: 'Living Room',
         brightness: 0,
         isPoweredOn: false,
       ),
-      SmartLight.standard(
-        id: 'light-kitchen',
-        location: 'Kitchen',
-        brightness: 50,
-      ),
-      Thermostat(
-        id: 'thermostat-bedroom',
-        name: 'Thermostat',
-        location: 'Bedroom',
-        temperature: 24.0,
-        isPoweredOn: true,
-      ),
-      SmartSpeaker(
-        id: 'speaker-kitchen',
-        name: 'Smart Speaker',
-        location: 'Kitchen',
-        volume: 40,
-        isPlaying: true,
-      ),
-      SmartSpeaker.ambient(
-        id: 'speaker-office',
-        location: 'Office',
-      ),
+      SmartLight.standard(id: 'light-kitchen', location: 'Kitchen', brightness: 50),
+      Thermostat(id: 'thermo-bedroom', name: 'Thermostat', location: 'Bedroom', temperature: 24.0, isPoweredOn: true),
+      SmartSpeaker(id: 'speaker-kitchen', name: 'Smart Speaker', location: 'Kitchen', volume: 40, isPlaying: true),
+      SmartLock.secured(id: 'lock-front', location: 'Front Door'),
     ];
   }
 }

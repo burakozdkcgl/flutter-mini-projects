@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
+import 'configure_devices_sheet.dart';
 
 /// Card widget rendering a polymorphic [SmartDevice] and its device-specific controls.
-///
-/// Demonstrates runtime polymorphism: receives a base [SmartDevice] reference
-/// and renders specialized icons, properties, and controls based on the dynamic subclass.
 class DeviceCard extends StatelessWidget {
   final SmartDevice device;
   final VoidCallback onStateChanged;
@@ -18,67 +16,48 @@ class DeviceCard extends StatelessWidget {
     this.onTap,
   });
 
+  Color get _accent => deviceAccentColor(device);
+
+  LinearGradient get _cardGradient {
+    final c = _accent;
+    if (!device.isPoweredOn) {
+      return const LinearGradient(colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)]);
+    }
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [c.withValues(alpha: 0.06), c.withValues(alpha: 0.12)],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: device.isPoweredOn
-              ? AppTheme.primaryBlue.withValues(alpha: 0.18)
-              : const Color(0xFFE2E8F0),
-          width: 1.2,
+    final isOn = device.isPoweredOn;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        decoration: BoxDecoration(
+          gradient: _cardGradient,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isOn ? _accent.withValues(alpha: 0.28) : const Color(0xFFE8EDF2),
+            width: 1.5,
+          ),
+          boxShadow: isOn
+              ? [BoxShadow(color: _accent.withValues(alpha: 0.10), blurRadius: 14, offset: const Offset(0, 5))]
+              : [],
         ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Device Icon Container
-              _buildDeviceIcon(),
-              const SizedBox(width: 14),
-
-              // Device Information (Title, Property, Status)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      device.displayTitle,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E293B),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      _getPropertyText(),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    _buildStatusIndicator(),
-                  ],
-                ),
-              ),
-
+              _buildIcon(),
+              const SizedBox(width: 12),
+              Expanded(child: _buildInfo()),
               const SizedBox(width: 8),
-
-              // Device-specific Action Control
-              _buildDeviceControl(context),
+              _buildControl(context),
             ],
           ),
         ),
@@ -86,183 +65,212 @@ class DeviceCard extends StatelessWidget {
     );
   }
 
-  /// Builds the left circular device icon with category-specific tinting.
-  Widget _buildDeviceIcon() {
-    IconData iconData;
-    Color iconColor;
-    Color bgColor;
-
-    if (device is SmartLight) {
-      final isLightOn = device.isPoweredOn;
-      iconData = isLightOn ? Icons.lightbulb : Icons.lightbulb_outline;
-      iconColor = isLightOn ? const Color(0xFFEAB308) : const Color(0xFF94A3B8);
-      bgColor = isLightOn
-          ? const Color(0xFFFEF3C7)
-          : const Color(0xFFF1F5F9);
-    } else if (device is Thermostat) {
-      iconData = Icons.thermostat;
-      iconColor = const Color(0xFFEF4444);
-      bgColor = const Color(0xFFFEE2E2);
-    } else if (device is SmartSpeaker) {
-      final isPlaying = (device as SmartSpeaker).isPlaying;
-      iconData = isPlaying ? Icons.speaker_group : Icons.speaker;
-      iconColor = const Color(0xFF2563EB);
-      bgColor = const Color(0xFFDBEAFE);
-    } else {
-      iconData = Icons.devices_other;
-      iconColor = const Color(0xFF64748B);
-      bgColor = const Color(0xFFF1F5F9);
-    }
-
+  // ── Left icon ────────────────────────────────────────────────────────────
+  Widget _buildIcon() {
     return Container(
-      width: 48,
-      height: 48,
+      width: 50, height: 50,
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        color: device.isPoweredOn ? _accent.withValues(alpha: 0.15) : const Color(0xFFEEF2F7),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(
-        iconData,
-        color: iconColor,
+        deviceIcon(device),
+        color: device.isPoweredOn ? _accent : const Color(0xFFCBD5E1),
         size: 26,
       ),
     );
   }
 
-  /// Returns the device-specific property string (Brightness, Temperature, or Volume).
-  String _getPropertyText() {
-    final dev = device;
-    if (dev is SmartLight) {
-      return 'Brightness: ${dev.brightness}%';
-    } else if (dev is Thermostat) {
-      return 'Temperature: ${dev.formattedTemperature}';
-    } else if (dev is SmartSpeaker) {
-      return 'Volume: ${dev.volume}%';
-    }
-    return '';
-  }
-
-  /// Builds the status text accompanied by an active/inactive colored dot.
-  Widget _buildStatusIndicator() {
-    final status = device.getStatus();
-    final isActive = status == 'ON' || status == 'Heating' || status == 'Playing';
-    final dotColor = isActive
-        ? AppTheme.statusActiveGreen
-        : AppTheme.statusInactiveGrey;
-
-    return Row(
+  // ── Center info ──────────────────────────────────────────────────────────
+  Widget _buildInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(
-            color: dotColor,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 5),
         Text(
-          'Status: $status',
+          device.name,
           style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w500,
-            color: isActive ? const Color(0xFF334155) : const Color(0xFF64748B),
+            fontSize: 15, fontWeight: FontWeight.w700,
+            color: device.isPoweredOn ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
           ),
+          maxLines: 1, overflow: TextOverflow.ellipsis,
         ),
+        const SizedBox(height: 1),
+        Row(children: [
+          const Icon(Icons.location_on_rounded, size: 11, color: Color(0xFF94A3B8)),
+          const SizedBox(width: 2),
+          Text(device.location, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+        ]),
+        const SizedBox(height: 6),
+        _buildProperty(),
+        const SizedBox(height: 4),
+        _buildStatus(),
       ],
     );
   }
 
-  /// Builds device-specific interactive controls:
-  /// - Switch for Smart Light
-  /// - [-] and [+] buttons for Thermostat
-  /// - Play/Pause button for Smart Speaker
-  Widget _buildDeviceControl(BuildContext context) {
+  Widget _buildProperty() {
+    String text;
+    IconData icon;
+    if (device is SmartLight) {
+      text = 'Brightness: ${(device as SmartLight).brightness}%';
+      icon = Icons.brightness_6_rounded;
+    } else if (device is Thermostat) {
+      text = 'Temp: ${(device as Thermostat).formattedTemperature}';
+      icon = Icons.thermostat_rounded;
+    } else if (device is SmartSpeaker) {
+      text = 'Volume: ${(device as SmartSpeaker).volume}%';
+      icon = Icons.volume_up_rounded;
+    } else if (device is SmartLock) {
+      final lock = device as SmartLock;
+      text = lock.isLocked ? 'Locked' : 'Unlocked';
+      icon = Icons.security_rounded;
+    } else if (device is SmartFan) {
+      text = 'Speed: ${(device as SmartFan).speedLabel}';
+      icon = Icons.air_rounded;
+    } else if (device is SecurityCamera) {
+      text = '${(device as SecurityCamera).resolution} · ${device.getStatus()}';
+      icon = Icons.videocam_rounded;
+    } else {
+      return const SizedBox.shrink();
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: _accent),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _accent)),
+      ],
+    );
+  }
+
+  Widget _buildStatus() {
+    final status = device.getStatus();
+    final isActive = !['OFF', 'Paused', 'Standby', 'Unlocked'].contains(status);
+    final dot = isActive ? AppTheme.statusActiveGreen : AppTheme.statusInactiveGrey;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6, height: 6,
+          decoration: BoxDecoration(
+            color: dot, shape: BoxShape.circle,
+            boxShadow: isActive
+                ? [BoxShadow(color: dot.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 1)]
+                : [],
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+            color: isActive ? const Color(0xFF334155) : const Color(0xFF94A3B8))),
+      ],
+    );
+  }
+
+  // ── Right control ────────────────────────────────────────────────────────
+  Widget _buildControl(BuildContext context) {
     final dev = device;
 
     if (dev is SmartLight) {
       return Switch(
         value: dev.isPoweredOn,
-        onChanged: (bool value) {
-          dev.performAction();
-          onStateChanged();
-        },
+        activeTrackColor: _accent,
+        inactiveTrackColor: const Color(0xFFE2E8F0),
+        thumbColor: WidgetStateProperty.all(Colors.white),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+        onChanged: (_) { dev.performAction(); onStateChanged(); },
       );
-    } else if (dev is Thermostat) {
-      return Row(
+    }
+
+    if (dev is Thermostat) {
+      return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Decrease Temperature Button (-)
-          _buildCircleButton(
-            icon: Icons.remove,
-            onPressed: () {
-              dev.decreaseTemperature();
-              onStateChanged();
-            },
+          _circleBtn(Icons.add_rounded, _accent, () { dev.increaseTemperature(); onStateChanged(); }),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Text(dev.formattedTemperature,
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _accent)),
           ),
-          const SizedBox(width: 8),
-          // Increase Temperature Button (+)
-          _buildCircleButton(
-            icon: Icons.add,
-            onPressed: () {
-              dev.increaseTemperature();
-              onStateChanged();
-            },
-          ),
+          _circleBtn(Icons.remove_rounded, _accent, () { dev.decreaseTemperature(); onStateChanged(); }),
         ],
       );
-    } else if (dev is SmartSpeaker) {
-      final isPlaying = dev.isPlaying;
-      return Container(
-        width: 42,
-        height: 42,
-        decoration: const BoxDecoration(
-          color: AppTheme.primaryBlue,
-          shape: BoxShape.circle,
-        ),
-        child: IconButton(
-          padding: EdgeInsets.zero,
-          iconSize: 22,
-          icon: Icon(
-            isPlaying ? Icons.pause : Icons.play_arrow,
-            color: Colors.white,
+    }
+
+    if (dev is SmartSpeaker) {
+      return _roundBtn(
+        dev.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+        _accent,
+        () { dev.performAction(); onStateChanged(); },
+      );
+    }
+
+    if (dev is SmartLock) {
+      return _roundBtn(
+        dev.isLocked ? Icons.lock_rounded : Icons.lock_open_rounded,
+        _accent,
+        () { dev.performAction(); onStateChanged(); },
+      );
+    }
+
+    if (dev is SmartFan) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _circleBtn(Icons.add_rounded, _accent, () { dev.performAction(); onStateChanged(); }),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Text(dev.speedLabel,
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _accent)),
           ),
-          onPressed: () {
-            dev.performAction();
+          _circleBtn(Icons.remove_rounded, _accent, () {
+            dev.setSpeedLevel(dev.speedLevel > 0 ? dev.speedLevel - 1 : 0);
             onStateChanged();
-          },
-        ),
+          }),
+        ],
+      );
+    }
+
+    if (dev is SecurityCamera) {
+      return _roundBtn(
+        dev.isRecording ? Icons.stop_rounded : Icons.fiber_manual_record_rounded,
+        _accent,
+        () { dev.performAction(); onStateChanged(); },
       );
     }
 
     return IconButton(
-      icon: const Icon(Icons.power_settings_new),
-      onPressed: () {
-        device.performAction();
-        onStateChanged();
-      },
+      icon: const Icon(Icons.power_settings_new_rounded),
+      onPressed: () { device.performAction(); onStateChanged(); },
     );
   }
 
-  /// Circular helper button for adjustment controls like [-] and [+].
-  Widget _buildCircleButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-        color: Colors.white,
+  Widget _circleBtn(IconData icon, Color color, VoidCallback onPressed) {
+    return SizedBox(
+      width: 30, height: 30,
+      child: Material(
+        color: color.withValues(alpha: 0.10),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: Icon(icon, size: 15, color: color),
+        ),
       ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        iconSize: 18,
-        icon: Icon(icon, color: const Color(0xFF475569)),
-        onPressed: onPressed,
+    );
+  }
+
+  Widget _roundBtn(IconData icon, Color color, VoidCallback onPressed) {
+    return SizedBox(
+      width: 42, height: 42,
+      child: Material(
+        color: color.withValues(alpha: 0.12),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: Icon(icon, size: 22, color: color),
+        ),
       ),
     );
   }

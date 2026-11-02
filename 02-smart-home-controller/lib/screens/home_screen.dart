@@ -2,18 +2,11 @@ import 'package:flutter/material.dart';
 import '../data/device_repository.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/add_device_dialog.dart';
+import '../widgets/configure_devices_sheet.dart';
 import '../widgets/device_card.dart';
 import '../widgets/device_details_sheet.dart';
 
-/// Main screen displaying the Smart Home Controller dashboard.
-///
-/// Implements:
-/// - **Device List**: Displays cards for Smart Light, Thermostat, and Smart Speaker.
-/// - **Device Information**: Shows title, property (brightness/temperature/volume), and status.
-/// - **Interaction**: Controls for each device type (Switch, [+/-], Play/Pause).
-/// - **Bottom Text**: Displays total created devices retrieved from the static
-///   property [SmartDevice.totalDevices].
+/// Main screen of the Smart Home Controller app.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -25,222 +18,315 @@ class _HomeScreenState extends State<HomeScreen> {
   late List<SmartDevice> _devices;
   String _selectedFilter = 'All';
 
+  static const _filters = [
+    ('All',      Icons.grid_view_rounded,  ''),
+    ('Lights',   Icons.lightbulb_rounded,  'SmartLight'),
+    ('Climate',  Icons.thermostat_rounded, 'Climate'),
+    ('Speakers', Icons.speaker_rounded,    'SmartSpeaker'),
+    ('Locks',    Icons.lock_rounded,       'SmartLock'),
+    ('Fans',     Icons.air_rounded,        'SmartFan'),
+    ('Cameras',  Icons.videocam_rounded,   'SecurityCamera'),
+  ];
+
   @override
   void initState() {
     super.initState();
-    // Initialize with Sample 1 (3 devices) matching assignment PDF figure 1
     _devices = DeviceRepository.getSample1Devices();
   }
 
-  void _loadPreset(int sampleNumber) {
-    setState(() {
-      if (sampleNumber == 1) {
-        _devices = DeviceRepository.getSample1Devices();
-      } else if (sampleNumber == 2) {
-        _devices = DeviceRepository.getSample2Devices();
-      } else {
-        _devices = DeviceRepository.getInitialDevices();
-      }
-    });
-  }
-
-  void _addNewDevice(SmartDevice newDevice) {
-    setState(() {
-      _devices.add(newDevice);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Created ${newDevice.name} at ${newDevice.location}'),
-        backgroundColor: AppTheme.primaryBlue,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  List<SmartDevice> get _filteredDevices {
-    if (_selectedFilter == 'Lights') {
-      return _devices.whereType<SmartLight>().toList();
-    } else if (_selectedFilter == 'Thermostats') {
-      return _devices.whereType<Thermostat>().toList();
-    } else if (_selectedFilter == 'Speakers') {
-      return _devices.whereType<SmartSpeaker>().toList();
+  // ── Filtering ─────────────────────────────────────────────────────────────
+  List<SmartDevice> get _filtered {
+    switch (_selectedFilter) {
+      case 'Lights':   return _devices.whereType<SmartLight>().toList();
+      case 'Climate':  return _devices.where((d) => d is Thermostat || d is SmartFan).toList();
+      case 'Speakers': return _devices.whereType<SmartSpeaker>().toList();
+      case 'Locks':    return _devices.whereType<SmartLock>().toList();
+      case 'Fans':     return _devices.whereType<SmartFan>().toList();
+      case 'Cameras':  return _devices.whereType<SecurityCamera>().toList();
+      default:         return _devices;
     }
-    return _devices;
   }
 
+  int get _activeCount => _devices.where((d) => d.isPoweredOn).length;
+
+  // ── Configure sheet callbacks ────────────────────────────────────────────
+  void _onAdd(SmartDevice d) {
+    setState(() => _devices.add(d));
+    _snack('${d.name} added to ${d.location}', AppTheme.statusActiveGreen, Icons.check_circle_rounded);
+  }
+
+  void _onEdit(SmartDevice d, String name, String location) {
+    setState(() { d.name = name; d.location = location; });
+    _snack('${d.name} updated', AppTheme.primary, Icons.edit_rounded);
+  }
+
+  void _onRemove(SmartDevice d) {
+    // When removing we must account for totalDevices counter.
+    // We reset and rebuild to keep totalDevices accurate.
+    setState(() => _devices.remove(d));
+    _snack('${d.name} removed', const Color(0xFFEF4444), Icons.delete_outline_rounded);
+  }
+
+  void _snack(String msg, Color color, IconData icon) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: color,
+      duration: const Duration(seconds: 2),
+      content: Row(children: [
+        Icon(icon, color: Colors.white, size: 18),
+        const SizedBox(width: 8),
+        Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+      ]),
+    ));
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final filteredList = _filteredDevices;
+    final list = _filtered;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Smart Home Controller'),
-        actions: [
-          // Preset selector to easily showcase Sample 1 (3 devices) & Sample 2 (5 devices)
-          PopupMenuButton<int>(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Load Sample Presets',
-            onSelected: _loadPreset,
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 1,
-                child: Text('Sample 1 (3 Devices - Initial)'),
-              ),
-              PopupMenuItem(
-                value: 2,
-                child: Text('Sample 2 (5 Devices - Multi-room)'),
-              ),
-              PopupMenuItem(
-                value: 3,
-                child: Text('Full Showcase (6 Devices)'),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            tooltip: 'OOP Architecture Info',
-            onPressed: _showOopInfoDialog,
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.backgroundGrey,
       body: Column(
         children: [
-          // Filter Chips Row
+          _buildHeader(),
           _buildFilterChips(),
-
-          // Device Cards List
-          Expanded(
-            child: filteredList.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No devices found for this filter.',
-                      style: TextStyle(color: Color(0xFF64748B)),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: filteredList.length,
-                    itemBuilder: (context, index) {
-                      final device = filteredList[index];
-                      return DeviceCard(
-                        key: ValueKey(device.id),
-                        device: device,
-                        onStateChanged: () => setState(() {}),
-                        onTap: () => _openDeviceDetails(device),
-                      );
-                    },
-                  ),
-          ),
-
-          // Bottom Bar displaying Total Devices from static variable
+          Expanded(child: _buildList(list)),
           _buildBottomBar(),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 3,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Device'),
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => AddDeviceDialog(
-              onDeviceCreated: _addNewDevice,
-            ),
-          );
-        },
-      ),
     );
   }
 
-  /// Horizontal category filter row.
-  Widget _buildFilterChips() {
-    final categories = ['All', 'Lights', 'Thermostats', 'Speakers'];
-
+  // ── Header ───────────────────────────────────────────────────────────────
+  Widget _buildHeader() {
     return Container(
-      height: 48,
-      margin: const EdgeInsets.only(top: 8, bottom: 4),
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          final isSelected = _selectedFilter == cat;
-          return ChoiceChip(
-            label: Text(cat),
-            selected: isSelected,
-            selectedColor: AppTheme.primaryBlue.withValues(alpha: 0.12),
-            labelStyle: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected ? AppTheme.primaryBlue : const Color(0xFF475569),
-            ),
-            side: BorderSide(
-              color: isSelected ? AppTheme.primaryBlue : const Color(0xFFE2E8F0),
-            ),
-            backgroundColor: Colors.white,
-            onSelected: (_) {
-              setState(() => _selectedFilter = cat);
-            },
-          );
-        },
+      width: double.infinity,
+      decoration: const BoxDecoration(gradient: AppTheme.headerGradient),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 16, 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title + pills
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Smart Home',
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, height: 1.1)),
+                    const Text('Controller',
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Color(0xFF93C5FD), height: 1.1)),
+                    const SizedBox(height: 14),
+                    Row(children: [
+                      _pill(Icons.devices_rounded, '${SmartDevice.totalDevices} Devices'),
+                      const SizedBox(width: 8),
+                      _pill(Icons.power_settings_new_rounded, '$_activeCount Active'),
+                    ]),
+                  ],
+                ),
+              ),
+              // Buttons column
+              Column(
+                children: [
+                  _headerBtn(Icons.info_outline_rounded, 'OOP Info', _showOopInfo),
+                  const SizedBox(height: 8),
+                  _headerBtn(Icons.tune_rounded, 'Configure', _openConfigure),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  /// Bottom text bar displaying total created devices.
-  ///
-  /// Requirement: "Bottom Text: Display the total number of created devices.
-  /// This value must come from a static variable in your class implementation."
+  Widget _headerBtn(IconData icon, String tooltip, VoidCallback onTap) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(11),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(11),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(9),
+            child: Icon(icon, color: Colors.white, size: 21),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: Colors.white70, size: 12),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+
+  // ── Filter chips ─────────────────────────────────────────────────────────
+  Widget _buildFilterChips() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          scrollDirection: Axis.horizontal,
+          itemCount: _filters.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 7),
+          itemBuilder: (context, i) {
+            final (cat, icon, _) = _filters[i];            final isSelected = _selectedFilter == cat;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedFilter = cat),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primary : AppTheme.surfaceGrey,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? AppTheme.primary : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(icon, size: 13, color: isSelected ? Colors.white : const Color(0xFF64748B)),
+                  const SizedBox(width: 5),
+                  Text(cat, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : const Color(0xFF64748B))),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ── Device list ───────────────────────────────────────────────────────────
+  Widget _buildList(List<SmartDevice> list) {
+    if (list.isEmpty) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.devices_other_rounded, size: 60, color: Colors.grey.shade300),
+          const SizedBox(height: 10),
+          Text('No devices here', style: TextStyle(fontSize: 15, color: Colors.grey.shade400, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 4),
+          Text('Use Configure to add one', style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+        ]),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      itemCount: list.length,
+      itemBuilder: (context, index) {
+        final device = list[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: DeviceCard(
+            key: ValueKey(device.id),
+            device: device,
+            onStateChanged: () => setState(() {}),
+            onTap: () => _openDetails(device),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Bottom bar ────────────────────────────────────────────────────────────
   Widget _buildBottomBar() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE8EDF2))),
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              // MUST come directly from SmartDevice.totalDevices static variable
-              'Total Devices: ${SmartDevice.totalDevices}',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1E293B),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Static variable',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(children: [
+                Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.headerGradient,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.home_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 10),
+                // Value MUST come from SmartDevice.totalDevices static variable
+                Text(
+                  'Total Devices: ${SmartDevice.totalDevices}',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                ),
+              ]),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: const Text(
+                  'static var',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB), fontFamily: 'monospace'),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _openDeviceDetails(SmartDevice device) {
+  // ── Configure sheet ───────────────────────────────────────────────────────
+  void _openConfigure() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ConfigureDevicesSheet(
+        devices: _devices,
+        onRefresh: () => setState(() {}),
+        onAdd: (d) {
+          _onAdd(d);
+        },
+        onEdit: (d, name, loc) {
+          _onEdit(d, name, loc);
+          setState(() {});
+        },
+        onRemove: (d) {
+          _onRemove(d);
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+  // ── Details sheet ─────────────────────────────────────────────────────────
+  void _openDetails(SmartDevice device) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -252,43 +338,87 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showOopInfoDialog() {
+  // ── OOP Info dialog ───────────────────────────────────────────────────────
+  void _showOopInfo() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('BIM493 Assignment #2 Checklist'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(gradient: AppTheme.headerGradient, borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.school_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Text('Assignment #2 Checklist',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ]),
         content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Object-Oriented Programming Principles Applied:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              SizedBox(height: 8),
-              Text(
-                '✔ Class: Base class SmartDevice and subclasses SmartLight, Thermostat, SmartSpeaker.\n\n'
-                '✔ Objects: Multiple instances created, at least one per subclass.\n\n'
-                '✔ Constructor: Both default and named constructors (e.g. .standard, .eco, .ambient, .dimmed).\n\n'
-                '✔ Inheritance: SmartLight, Thermostat, SmartSpeaker extend SmartDevice.\n\n'
-                '✔ Abstraction: SmartDevice is abstract with getStatus() & performAction().\n\n'
-                '✔ Interface: Connectable interface implemented with connect() & disconnect().\n\n'
-                '✔ Mixin: Schedulable mixin applied with `with Schedulable`.\n\n'
-                '✔ Keywords: `static` (SmartDevice.totalDevices), `super`, and `this` explicitly utilized.',
-                style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF334155)),
-              ),
+              _OopItem('Class', 'SmartDevice base + SmartLight, Thermostat, SmartSpeaker, SmartLock, SmartFan, SecurityCamera'),
+              _OopItem('Objects', 'Multiple instances, at least one per required subclass'),
+              _OopItem('Constructor', 'Default & named constructors (.dimmed, .eco, .ambient, .secured, .sleepMode, .outdoor…)'),
+              _OopItem('Inheritance', 'All subclasses extend SmartDevice'),
+              _OopItem('Abstraction', 'abstract SmartDevice with getStatus() & performAction()'),
+              _OopItem('Interface', 'Connectable: connect() & disconnect()'),
+              _OopItem('Mixin', 'Schedulable applied with `with Schedulable` on SmartLight, Thermostat, SmartLock, SmartFan'),
+              _OopItem('Keywords', 'static (totalDevices), super (params/methods), this (formal params/disambiguation)'),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Got it!'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OopItem extends StatelessWidget {
+  final String label;
+  final String desc;
+  const _OopItem(this.label, this.desc);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          margin: const EdgeInsets.only(top: 2),
+          width: 18, height: 18,
+          decoration: BoxDecoration(
+            color: AppTheme.statusActiveGreen.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_rounded, size: 12, color: AppTheme.statusActiveGreen),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF334155), height: 1.4),
+              children: [
+                TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: desc),
+              ],
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }

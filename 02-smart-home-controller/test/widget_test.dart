@@ -12,7 +12,6 @@ void main() {
     test('Static totalDevices increments with constructors', () {
       expect(SmartDevice.totalDevices, 0);
 
-      // Default constructor
       final light = SmartLight(
         id: 'light-1',
         name: 'Smart Light',
@@ -21,7 +20,6 @@ void main() {
       expect(SmartDevice.totalDevices, 1);
       expect(light.getStatus(), 'OFF');
 
-      // Named constructor
       final ecoThermostat = Thermostat.eco(
         id: 'thermo-1',
         location: 'Bedroom',
@@ -30,7 +28,6 @@ void main() {
       expect(ecoThermostat.temperature, 19.0);
       expect(ecoThermostat.getStatus(), 'Cooling');
 
-      // Another named constructor
       final partySpeaker = SmartSpeaker.partyMode(
         id: 'speaker-1',
         location: 'Hall',
@@ -39,6 +36,21 @@ void main() {
       expect(partySpeaker.volume, 80);
       expect(partySpeaker.isPlaying, isTrue);
       expect(partySpeaker.getStatus(), 'Playing');
+
+      final lock = SmartLock.secured(id: 'lock-1', location: 'Front Door');
+      expect(SmartDevice.totalDevices, 4);
+      expect(lock.isLocked, isTrue);
+      expect(lock.getStatus(), 'Locked');
+
+      final fan = SmartFan.sleepMode(id: 'fan-1', location: 'Bedroom');
+      expect(SmartDevice.totalDevices, 5);
+      expect(fan.speed, FanSpeed.low);
+      expect(fan.getStatus(), 'Low');
+
+      final cam = SecurityCamera.outdoor(id: 'cam-1', location: 'Garden');
+      expect(SmartDevice.totalDevices, 6);
+      expect(cam.isRecording, isTrue);
+      expect(cam.getStatus(), 'Recording');
     });
 
     test('Inheritance and Abstraction contracts', () {
@@ -49,7 +61,6 @@ void main() {
         isPoweredOn: true,
       );
 
-      // Polymorphic method calls
       expect(light.getStatus(), 'ON');
       light.performAction();
       expect(light.getStatus(), 'OFF');
@@ -103,6 +114,21 @@ void main() {
       expect(thermo.temperature, 19.0);
       expect(thermo.getStatus(), 'Cooling');
     });
+
+    test('SmartLock toggling and failed attempts', () {
+      final lock = SmartLock.secured(id: 'l3', location: 'Back Door');
+      expect(lock.isLocked, isTrue);
+      lock.performAction();
+      expect(lock.isLocked, isFalse);
+      expect(lock.getStatus(), 'Unlocked');
+    });
+
+    test('SmartFan speed cycling', () {
+      final fan = SmartFan(id: 'f1', name: 'Smart Fan', location: 'Office');
+      expect(fan.speed, FanSpeed.low);
+      fan.performAction();
+      expect(fan.speed, FanSpeed.medium);
+    });
   });
 
   group('UI Screens & Widgets Smoke Test', () {
@@ -110,13 +136,14 @@ void main() {
       await tester.pumpWidget(const SmartHomeControllerApp());
       await tester.pumpAndSettle();
 
-      // Verify AppBar
-      expect(find.text('Smart Home Controller'), findsOneWidget);
+      // Verify Header Titles
+      expect(find.text('Smart Home'), findsOneWidget);
+      expect(find.text('Controller'), findsOneWidget);
 
       // Verify Sample 1 device cards
-      expect(find.text('Smart Light: Living Room'), findsOneWidget);
-      expect(find.text('Thermostat: Bedroom'), findsOneWidget);
-      expect(find.text('Smart Speaker: Kitchen'), findsOneWidget);
+      expect(find.text('Smart Light'), findsOneWidget);
+      expect(find.text('Thermostat'), findsOneWidget);
+      expect(find.text('Smart Speaker'), findsOneWidget);
 
       // Verify Bottom bar static device counter
       expect(find.text('Total Devices: 3'), findsOneWidget);
@@ -128,17 +155,54 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify Thermostat [+] button
-      expect(find.byIcon(Icons.add), findsWidgets);
-      await tester.tap(find.byIcon(Icons.add).first);
+      expect(find.byIcon(Icons.add_rounded), findsWidgets);
+      await tester.tap(find.byIcon(Icons.add_rounded).first);
       await tester.pumpAndSettle();
-      expect(find.text('Temperature: 23°C'), findsOneWidget);
+      expect(find.text('Temp: 23°C'), findsOneWidget);
 
       // Verify Speaker Play button
-      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.play_arrow));
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.pause), findsOneWidget);
-      expect(find.text('Status: Playing'), findsOneWidget);
+      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+      expect(find.text('Playing'), findsOneWidget);
+    });
+
+    testWidgets('Can open Configure sheet and Add a new device', (tester) async {
+      await tester.pumpWidget(const SmartHomeControllerApp());
+      await tester.pumpAndSettle();
+
+      // Tap Configure button in header
+      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.pumpAndSettle();
+
+      // Configure sheet should be open
+      expect(find.text('Configure Devices'), findsOneWidget);
+
+      // Tap Add Device button inside configure sheet
+      final addBtn = find.widgetWithText(ElevatedButton, 'Add Device');
+      expect(addBtn, findsOneWidget);
+      await tester.tap(addBtn);
+      await tester.pumpAndSettle();
+
+      // Add Device dialog should be open
+      expect(find.text('Device Type'), findsOneWidget);
+      expect(find.text('Lock'), findsOneWidget);
+
+      // Select 'Lock' category
+      await tester.tap(find.text('Lock'));
+      await tester.pumpAndSettle();
+
+      // Tap 'Create'
+      final createBtn = find.widgetWithText(FilledButton, 'Create');
+      expect(createBtn, findsOneWidget);
+      await tester.tap(createBtn);
+      await tester.pumpAndSettle();
+
+      // Verify Total Devices incremented to 4 and snackbar appeared
+      expect(find.text('Total Devices: 4'), findsOneWidget);
+      expect(find.text('Smart Lock added to Living Room'), findsOneWidget);
     });
   });
 }
