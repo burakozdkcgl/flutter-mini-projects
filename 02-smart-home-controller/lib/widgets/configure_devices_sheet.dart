@@ -533,18 +533,6 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
     });
   }
 
-  String get _namedCtorLabel {
-    switch (_selectedType) {
-      case 'Smart Light':    return '.dimmed';
-      case 'Thermostat':     return '.eco';
-      case 'Smart Speaker':  return '.ambient';
-      case 'Smart Lock':     return '.secured';
-      case 'Smart Fan':      return '.sleepMode';
-      case 'Security Camera':return '.outdoor';
-      default:               return 'Named';
-    }
-  }
-
   Widget _buildTypeBtn((String, IconData, Color) entry) {
     final (type, icon, color) = entry;
     final isSelected = _selectedType == type;
@@ -693,9 +681,9 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _ctorBtn('Default', 'Standard setup', Icons.build_rounded)),
+                  Expanded(child: _ctorBtn('Default', Icons.build_rounded)),
                   const SizedBox(width: 8),
-                  Expanded(child: _ctorBtn('Named', _namedCtorLabel, Icons.auto_fix_high_rounded)),
+                  Expanded(child: _ctorBtn('Named', Icons.auto_fix_high_rounded)),
                 ],
               ),
             ],
@@ -723,14 +711,14 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
     );
   }
 
-  Widget _ctorBtn(String value, String label, IconData icon) {
+  Widget _ctorBtn(String value, IconData icon) {
     final isSelected = _constructorMode == value;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _constructorMode = value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppTheme.primary.withValues(alpha: 0.07) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(12),
@@ -740,21 +728,16 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
           ),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: isSelected ? AppTheme.primary : const Color(0xFF94A3B8)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(value,
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w700,
-                          color: isSelected ? AppTheme.primary : const Color(0xFF475569))),
-                  Text(label,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
-                ],
+            Icon(icon, size: 16, color: isSelected ? AppTheme.primary : const Color(0xFF94A3B8)),
+            const SizedBox(width: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? AppTheme.primary : const Color(0xFF475569),
               ),
             ),
           ],

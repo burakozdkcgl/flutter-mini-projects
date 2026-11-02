@@ -113,10 +113,12 @@ class DeviceCard extends StatelessWidget {
     String text;
     IconData icon;
     if (device is SmartLight) {
-      text = 'Brightness: ${(device as SmartLight).brightness}%';
+      final light = device as SmartLight;
+      final displayBrightness = light.isPoweredOn ? light.brightness : 0;
+      text = 'Brightness: $displayBrightness%';
       icon = Icons.brightness_6_rounded;
     } else if (device is Thermostat) {
-      text = 'Temp: ${(device as Thermostat).formattedTemperature}';
+      text = 'Temperature: ${(device as Thermostat).formattedTemperature}';
       icon = Icons.thermostat_rounded;
     } else if (device is SmartSpeaker) {
       text = 'Volume: ${(device as SmartSpeaker).volume}%';
@@ -183,16 +185,12 @@ class DeviceCard extends StatelessWidget {
     }
 
     if (dev is Thermostat) {
-      return Column(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _circleBtn(Icons.add_rounded, _accent, () { dev.increaseTemperature(); onStateChanged(); }),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Text(dev.formattedTemperature,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _accent)),
-          ),
           _circleBtn(Icons.remove_rounded, _accent, () { dev.decreaseTemperature(); onStateChanged(); }),
+          const SizedBox(width: 8),
+          _circleBtn(Icons.add_rounded, _accent, () { dev.increaseTemperature(); onStateChanged(); }),
         ],
       );
     }

@@ -61,9 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onRemove(SmartDevice d) {
-    // When removing we must account for totalDevices counter.
-    // We reset and rebuild to keep totalDevices accurate.
-    setState(() => _devices.remove(d));
+    setState(() {
+      _devices.remove(d);
+      if (SmartDevice.totalDevices > 0) {
+        SmartDevice.totalDevices--;
+      }
+    });
     _snack('${d.name} removed', const Color(0xFFEF4444), Icons.delete_outline_rounded);
   }
 
@@ -263,36 +266,20 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(children: [
-                Container(
-                  width: 34, height: 34,
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.headerGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.home_rounded, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 10),
-                // Value MUST come from SmartDevice.totalDevices static variable
-                Text(
-                  'Total Devices: ${SmartDevice.totalDevices}',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
-                ),
-              ]),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                width: 34, height: 34,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                  gradient: AppTheme.headerGradient,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'static var',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB), fontFamily: 'monospace'),
-                ),
+                child: const Icon(Icons.home_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              // Value MUST come from SmartDevice.totalDevices static variable
+              Text(
+                'Total Devices: ${SmartDevice.totalDevices}',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
               ),
             ],
           ),

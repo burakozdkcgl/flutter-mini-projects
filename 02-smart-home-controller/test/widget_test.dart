@@ -159,7 +159,7 @@ void main() {
       expect(find.byIcon(Icons.add_rounded), findsWidgets);
       await tester.tap(find.byIcon(Icons.add_rounded).first);
       await tester.pumpAndSettle();
-      expect(find.text('Temp: 20°C'), findsOneWidget);
+      expect(find.text('Temperature: 20°C'), findsOneWidget);
 
       // Verify Speaker Play button
       expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
@@ -209,6 +209,25 @@ void main() {
       // Verify Total Devices incremented to 7 and snackbar appeared with custom name
       expect(find.text('Total Devices: 7'), findsOneWidget);
       expect(find.text('Garage Smart Bolt added to Living Room'), findsOneWidget);
+
+      // Configure sheet is still open; tap delete button on the newly added device (last)
+      final deleteButtons = find.byIcon(Icons.delete_outline_rounded);
+      expect(deleteButtons, findsWidgets);
+      await tester.tap(deleteButtons.last);
+      await tester.pumpAndSettle();
+
+      // Confirm dialog: tap 'Remove'
+      final removeConfirmBtn = find.widgetWithText(FilledButton, 'Remove');
+      expect(removeConfirmBtn, findsOneWidget);
+      await tester.tap(removeConfirmBtn);
+      await tester.pumpAndSettle();
+
+      // Close configure sheet
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.pumpAndSettle();
+
+      // Verify Total Devices decremented back to 6
+      expect(find.text('Total Devices: 6'), findsOneWidget);
     });
   });
 }
